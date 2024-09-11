@@ -138,9 +138,35 @@ storage like Redis or any other distributed cache so that all the instances of t
 access the counter and make decision based on the total requests consumed by any User/IP/ApiKey etc.
 across all the instances across the globe.
 
-### how to use:
 
-Git clone the repository and run the following command:
+### how to use rate limiter to see how it protects microservices:
+Go to folder first-service and start the service - it will start on port 8081 - localhost:8081/api/first/weather
+
+Go to folder second-service and start the service - it will start on port 8082 - localhost:8082/api/second/day
+
+Go to folder cloud-gateway-to-throttle-each-service-using-sliding-window-counter-rate-limiter 
+and start the gateway API - it will start on port 8080. It has been configured to allow only 5 request per minute
+via custom filter which uses the same algorithm present in rate-limiter folder but here we have to call it from custom filter
+which gets called whenever any new request for service-1 or service-2 comes to Gateway.
+
+You can configure it to allow more/less requests via application.yml properties
+Here we have only two services but you can add as many as you want but it will allow total 5 call only per minute
+so you can make 5 calls to service-1 and 0 call to serivce-2 or 3 calls to service-1 and 2 calls to service-2 etc.
+Once rate limit is reached, it will give you Error with status code - 429 (Too Many Requests) along with useful
+header parameters like retry-after etc.
+
+To see it in browser/postman, go to localhost:8081/api/first/weather 
+and go to localhost:8082/api/second/day in another browser/postman window.
+Start calling these services in any order but make sure to hit them more than 5 times a minute and see the rate-limiter in action :)
+Verify response headers for more details.
+
+
+### how to use just the algorithm:
+Go to rate-limiter folder which has two implementation of the same Sliding WIndow Counter algorithm.
+1. Implemented using in-memory concurent HashMap to be used as a library/filter inside each service deployment.
+2. Implemented using redis to be used as a distributed rate-limiter.
+
+Git clone the repository, go to rate-limiter folder and run the following command:
 ```
 mvn clean install
 ```
@@ -148,9 +174,9 @@ And run the following command to run the test cases:
 ```
 mvn test
 ```
+For 1st in-memory implementation, see the demo by running the test cases inside SlidingWindowCountStrategyTest.java
+For 2nd redis-distributed implementation, see the demo by running the test cases inside SlidingWindowCountDistributedUsingRedisStrategyTest.java
 
-If you are using any IDE, you can run the test cases by running the test class RateLimiterTest.java
-Also, you can run the main class RateLimiterMain.java to see the output of the rate limiter.
 
 ### References:
 1. https://www.figma.com/blog/an-alternative-approach-to-rate-limiting/
